@@ -4,11 +4,30 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>zxeltor.Types.Lib</Title>
+    <Description>A general purpose library of types and helpers</Description>
+    <PackageProjectUrl>https://github.com/zxeltor/zxeltor.Types.Lib</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryType>git</RepositoryType>
+    <PackageIcon>LLAP128x128.png</PackageIcon>
+    <RepositoryUrl>https://github.com/zxeltor/zxeltor.Types.Lib</RepositoryUrl>
+    <Authors>Todd Taylor</Authors>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.17" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="LLAP128x128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
