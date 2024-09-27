@@ -11,7 +11,7 @@ public enum ResultLevel
     /// <summary>
     ///     Debug information. This will set Success to true in our Result.
     /// </summary>
-    Debug,
+    Debug = 1,
     /// <summary>
     ///     Information. This will set Success to true in our Result.
     /// </summary>

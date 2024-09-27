@@ -8,16 +8,15 @@ using log4net;
 using log4net.Appender;
 using log4net.Config;
 using log4net.Core;
+using log4net.Filter;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
-
-using zxeltor.Types.Lib.Collections;
 using zxeltor.Types.Lib.Logging;
 
 namespace zxeltor.Types.Lib.Helpers;
 
 /// <summary>
-///     A collection of static helpers used to manage logging for the application.
+///     A collection of static helpers used to manage log4net logging for the application.
 /// </summary>
 public class LoggingHelper
 {
@@ -30,6 +29,38 @@ public class LoggingHelper
     #region Public Members
 
     /// <summary>
+    ///     Attempt to add our custom appender, so we can handle log4net messages via application event.
+    /// </summary>
+    /// <param name="appenderName">The name of the appender</param>
+    /// <param name="appender">A reference to the appender</param>
+    /// <returns>True if successful. False otherwise.</returns>
+    public static bool TryAddingLoggingEventAppender(string appenderName, out LoggingEventAppender? appender)
+    {
+        appender = null;
+
+        try
+        {
+            var h = (Hierarchy)LogManager.GetRepository();
+            h.Root.Level = Level.All;
+
+            appender = CreateLoggingEventAppender(appenderName);
+
+            if (appender != null)
+            {
+                h.Root.AddAppender(appender);
+                h.Configured = true;
+                return true;
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error("Failed to add DataGridCollectionAppender", e);
+        }
+
+        return false;
+    }
+
+    /// <summary>
     ///     Configure log4net by setting a log4net.config from the root application folder, if it's available.
     ///     <para>
     ///         If running in a development environment, this logic will look for another version of log4net.config named
@@ -37,7 +68,7 @@ public class LoggingHelper
     ///         isn't available, it will default to log4net.config, if it can.
     ///     </para>
     /// </summary>
-    public static void ConfigureLog4NetLogging()
+    public static bool TryConfigureLog4NetLogging(out bool isUsingDevelopmentConfig)
     {
 #if DEBUG
         var isDevelopment = true;
@@ -45,7 +76,7 @@ public class LoggingHelper
         var isDevelopment = false;
 #endif
 
-        var debugLogSettingsAreBeingUsed = false;
+        isUsingDevelopmentConfig = false;
 
         if (isDevelopment)
         {
@@ -55,16 +86,23 @@ public class LoggingHelper
             if (File.Exists(devVersionOfSettingsFilePath))
             {
                 XmlConfigurator.ConfigureAndWatch(new FileInfo(devVersionOfSettingsFilePath));
-                debugLogSettingsAreBeingUsed = true;
+                isUsingDevelopmentConfig = true;
+                return true;
             }
         }
 
-        if (!debugLogSettingsAreBeingUsed)
+        if (!isUsingDevelopmentConfig)
         {
-            var settingsFilePath =
-                Path.Combine(AssemblyInfoHelper.GetMainApplicationRootFolder(), "Log4Net.config");
-            if (File.Exists(settingsFilePath)) XmlConfigurator.ConfigureAndWatch(new FileInfo(settingsFilePath));
+            var settingsFilePath = Path.Combine(AssemblyInfoHelper.GetMainApplicationRootFolder(), "Log4Net.config");
+
+            if (File.Exists(settingsFilePath))
+            {
+                XmlConfigurator.ConfigureAndWatch(new FileInfo(settingsFilePath));
+                return true;
+            }
         }
+
+        return false;
     }
 
     /// <summary>
@@ -88,7 +126,13 @@ public class LoggingHelper
             var fileAppender = appender as FileAppender;
             if (fileAppender == null) return false;
 
-            fileAppender.Threshold = enableDebugLogging ? Level.Debug : Level.Info;
+            fileAppender.ClearFilters();
+
+            if (enableDebugLogging)
+                fileAppender.AddFilter(new LevelRangeFilter { LevelMin = Level.Debug, LevelMax = Level.Fatal });
+            else
+                fileAppender.AddFilter(new LevelRangeFilter { LevelMin = Level.Error, LevelMax = Level.Fatal });
+
 
             return true;
         }
@@ -100,37 +144,21 @@ public class LoggingHelper
         return false;
     }
 
-    public static bool TryAddingDataGridCollectionAppender(string appenderName, SyncNotifyCollection<DataGridRowContext> logGridRows)
+    #endregion
+
+    #region Other Members
+
+    /// <summary>
+    ///     Attempt to create our custom appender.
+    /// </summary>
+    /// <param name="appenderName">A name for the appender</param>
+    /// <returns>A handle to the appender</returns>
+    private static LoggingEventAppender? CreateLoggingEventAppender(string appenderName)
     {
         try
         {
-
-            Hierarchy h = (Hierarchy)LogManager.GetRepository();
-            h.Root.Level = Level.All;
-
-            var appender = CreateDataGridCollectionAppender(appenderName, logGridRows);
-
-            if (appender != null)
-            {
-                h.Root.AddAppender(appender);
-                h.Configured = true;
-                return true;
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error("Failed to add DataGridCollectionAppender", e);
-        }
-
-        return false;
-    }
-
-    public static IAppender? CreateDataGridCollectionAppender(string appenderName, SyncNotifyCollection<DataGridRowContext> logGridRows)
-    {
-        try
-        {
-            var appender = new DataGridCollectionAppender(appenderName, logGridRows);
-            PatternLayout layout = new PatternLayout();
+            var appender = new LoggingEventAppender(appenderName);
+            var layout = new PatternLayout();
             layout.ConversionPattern = "% message %";
             layout.ActivateOptions();
             appender.Layout = layout;
@@ -139,10 +167,11 @@ public class LoggingHelper
         }
         catch (Exception e)
         {
-            Log.Error("Failed to create DataGridCollectionAppender", e);
+            Log.Error("Failed to create LoggingEventAppender", e);
         }
 
         return null;
     }
+
     #endregion
 }

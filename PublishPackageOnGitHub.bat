@@ -1,0 +1,1 @@
+dotnet nuget push "bin/Release/zxeltor.Types.Lib.1.0.1.nupkg" --source "github" --api-key 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

@@ -137,6 +137,26 @@ public sealed class SyncNotifyCollection<T> : ICollection<T>, INotifyCollectionC
             this._cacheLock.ExitWriteLock();
         }
     }
+    
+    /// <summary>
+    ///     Inserts an element into the collection at the specified index.
+    /// </summary>
+    /// <param name="index">The zero-based index at which item should be inserted.</param>
+    /// <param name="item">The object to insert. The value can be null for reference types.</param>
+    /// <exception cref="ArgumentOutOfRangeException">index is less than 0. -or- index is greater than System.Collections.Generic.List`1.Count.</exception>
+    public void InsertAt(int index, T item)
+    {
+        this._cacheLock.EnterWriteLock();
+        try
+        {
+            this._syncList.Insert(index, item);
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
+        }
+        finally
+        {
+            this._cacheLock.ExitWriteLock();
+        }
+    }
 
     public void AddRange(IEnumerable<T> collection)
     {
@@ -245,6 +265,7 @@ public sealed class SyncNotifyCollection<T> : ICollection<T>, INotifyCollectionC
     private void OnCollectionChanged(NotifyCollectionChangedEventArgs arg)
     {
         this.CollectionChanged?.Invoke(this, arg);
+        this.OnPropertyChanged(nameof(this.Count));
     }
 
     #endregion
