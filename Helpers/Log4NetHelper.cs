@@ -18,11 +18,11 @@ namespace zxeltor.Types.Lib.Helpers;
 /// <summary>
 ///     A collection of static helpers used to manage log4net logging for the application.
 /// </summary>
-public class LoggingHelper
+public class Log4NetHelper
 {
     #region Static Fields and Constants
 
-    private static readonly ILog Log = LogManager.GetLogger(typeof(LoggingHelper));
+    private static readonly ILog Log = LogManager.GetLogger(typeof(Log4NetHelper));
 
     #endregion
 

@@ -4,7 +4,8 @@
 // This source code is licensed under the Apache-2.0-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using zxeltor.Types.Lib.Extensions;
 
 namespace zxeltor.Types.Lib.Helpers;
@@ -18,6 +19,26 @@ public static class SerializationHelper
     #region Public Members
 
     /// <summary>
+    ///     Creates a new instance of JsonSerializerOptions configured for camel case property naming and case-insensitive
+    ///     property name matching.
+    /// </summary>
+    /// <remarks>The returned options also ignore properties with null values during serialization by setting
+    /// DefaultIgnoreCondition to WhenWritingNull.</remarks>
+    /// <param name="writeIndented">true to format the JSON output for readability; otherwise, false to minimize whitespace.</param>
+    /// <returns>A JsonSerializerOptions instance with camel case property naming, case-insensitive property name matching, and
+    /// the specified indentation setting.</returns>
+    private static JsonSerializerOptions GetOptions(bool writeIndented)
+    {
+        return new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            WriteIndented = writeIndented
+        };
+    }
+
+    /// <summary>
     ///     Deserialize a JSON string as a chosen type.
     /// </summary>
     /// <typeparam name="T">The chosen type</typeparam>
@@ -26,7 +47,8 @@ public static class SerializationHelper
     /// <returns>An object of the chosen type.</returns>
     public static T? Deserialize<T>(string data, bool removeSpecialCharacters = true)
     {
-        return JsonConvert.DeserializeObject<T>(removeSpecialCharacters ? data.RemoveSpecialChars() : data);
+        var source = removeSpecialCharacters ? data.RemoveSpecialChars() : data;
+        return JsonSerializer.Deserialize<T>(source, GetOptions(false));
     }
 
     /// <summary>
@@ -40,10 +62,7 @@ public static class SerializationHelper
     /// <returns>A JSON string representation of the data object.</returns>
     public static string Serialize(object? data, bool useJsonIndentation = false)
     {
-        if (useJsonIndentation)
-            return JsonConvert.SerializeObject(data, Formatting.Indented);
-
-        return JsonConvert.SerializeObject(data);
+        return JsonSerializer.Serialize(data, GetOptions(useJsonIndentation));
     }
 
     /// <summary>
@@ -64,7 +83,8 @@ public static class SerializationHelper
 
         try
         {
-            output = JsonConvert.DeserializeObject<T>(removeSpecialCharacters ? data.RemoveSpecialChars() : data);
+            var source = removeSpecialCharacters ? data.RemoveSpecialChars() : data;
+            output = JsonSerializer.Deserialize<T>(source, GetOptions(false));
             return true;
         }
         catch
@@ -89,16 +109,12 @@ public static class SerializationHelper
     {
         try
         {
-            if (useJsonIndentation)
-                output = JsonConvert.SerializeObject(data, Formatting.Indented);
-            else
-                output = JsonConvert.SerializeObject(data);
-
+            output = JsonSerializer.Serialize(data, GetOptions(useJsonIndentation));
             return true;
         }
         catch
         {
-            output = default;
+            output = default!;
         }
 
         return false;
